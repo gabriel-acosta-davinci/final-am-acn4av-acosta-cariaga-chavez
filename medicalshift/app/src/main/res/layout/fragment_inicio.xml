@@ -24,9 +24,9 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"/>
 
-        <!-- Últimos trámites -->
+        <!-- Últimas gestiones -->
         <include
-            layout="@layout/component_tramites"
+            layout="@layout/component_gestiones"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 

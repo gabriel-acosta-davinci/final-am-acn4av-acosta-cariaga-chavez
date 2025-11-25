@@ -1,7 +1,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/nav_home" android:icon="@drawable/ic_home" android:title="Inicio"/>
-    <item android:id="@+id/nav_cartilla" android:icon="@drawable/ic_cartilla" android:title="Cartilla"/>
-    <item android:id="@+id/nav_tramites" android:icon="@drawable/ic_tramites" android:title="Trámites"/>
-    <item android:id="@+id/nav_perfil" android:icon="@drawable/ic_perfil" android:title="Perfil"/>
-    <item android:id="@+id/nav_mas" android:icon="@drawable/ic_menu_hamburguesa" android:title="Más"/>
+    <item android:id="@+id/nav_inicio" android:icon="@drawable/ic_home" android:title="Inicio" />
+    <item android:id="@+id/nav_cartilla" android:icon="@drawable/ic_cartilla" android:title="Cartilla" />
+    <item android:id="@+id/nav_gestiones" android:icon="@drawable/ic_gestiones" android:title="Gestiones" />
+    <item android:id="@+id/nav_perfil" android:icon="@drawable/ic_perfil" android:title="Mi cuenta" />
+    <item android:id="@+id/nav_menu" android:icon="@drawable/ic_menu_hamburguesa" android:title="Más" />
 </menu>

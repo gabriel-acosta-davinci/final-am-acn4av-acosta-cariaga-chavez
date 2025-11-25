@@ -198,13 +198,6 @@ public class CartillaActivity extends AppCompatActivity {
         public String getJsonSpecialtiesFile() { return jsonSpecialtiesFile; }
     }
     
-    private static class User {
-        private final String plan; private final String localidad;
-        public User(JSONObject object) throws JSONException { this.plan = object.getString("Plan"); this.localidad = object.getJSONObject("Domicilio de Residencia").getString("Localidad"); }
-        public String getPlan() { return plan; }
-        public String getLocalidad() { return localidad; }
-    }
-    
     private static class OpcionAdapter extends RecyclerView.Adapter<OpcionAdapter.ViewHolder> {
         private final List<CartillaOpcion> opciones; private final OnOpcionClickListener listener;
         public OpcionAdapter(List<CartillaOpcion> o, OnOpcionClickListener l) { this.opciones = o; this.listener = l; }

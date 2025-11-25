@@ -6,6 +6,7 @@
     "Email": "gabriel.acosta@example.com",
     "Plan": "Plan Platino",
     "Número de asociado": "123456-01",
+    "CBU": "0170432120000001234567",
     "Fecha de nacimiento": "1990-05-15",
     "Estado Civil": "Concubino/a",
     "Domicilio de Residencia": {
@@ -24,6 +25,7 @@
     "Email": "sofia.martinez@example.com",
     "Plan": "Plan Bronce",
     "Número de asociado": "654321-02",
+    "CBU": "0720123488000009876543",
     "Fecha de nacimiento": "1995-11-20",
     "Estado Civil": "Soltero/a",
     "Domicilio de Residencia": {
@@ -42,6 +44,7 @@
     "Email": "carlos.gomez@example.com",
     "Plan": "Plan Plata",
     "Número de asociado": "789012-03",
+    "CBU": "3300599520000005432101",
     "Fecha de nacimiento": "1985-02-10",
     "Estado Civil": "Casado/a",
     "Domicilio de Residencia": {
@@ -60,6 +63,7 @@
     "Email": "valentina.r@example.com",
     "Plan": "Plan Oro",
     "Número de asociado": "345678-04",
+    "CBU": "0140000701100001231234",
     "Fecha de nacimiento": "1998-08-30",
     "Estado Civil": "Soltero/a",
     "Domicilio de Residencia": {
@@ -78,6 +82,7 @@
     "Email": "mateo.fernandez@example.com",
     "Plan": "Plan Bronce",
     "Número de asociado": "901234-05",
+    "CBU": "0110599520000005432101",
     "Fecha de nacimiento": "1993-12-01",
     "Estado Civil": "Casado/a",
     "Domicilio de Residencia": {

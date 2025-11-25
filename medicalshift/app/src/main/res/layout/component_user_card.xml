@@ -62,30 +62,32 @@
                 android:fontFamily="@font/inter"/>
         </LinearLayout>
 
-        <!-- Token -->
+        <!-- Plan -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:layout_marginEnd="24dp">
 
             <TextView
-                android:id="@+id/cardTokenLabel"
+                android:id="@+id/cardPlanLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Token"
+                android:text="Plan"
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp"
                 android:fontFamily="@font/inter"/>
 
             <TextView
-                android:id="@+id/cardTokenValue"
+                android:id="@+id/cardPlanValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="727"
+                android:text="Plan Platino"
                 android:textColor="@color/text_primary"
                 android:textSize="14sp"
                 android:fontFamily="@font/inter"/>
         </LinearLayout>
+
     </LinearLayout>
 
     <!-- Logo a la derecha -->

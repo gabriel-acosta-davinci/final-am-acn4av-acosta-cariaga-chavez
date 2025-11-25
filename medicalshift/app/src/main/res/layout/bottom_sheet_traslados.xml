@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_gradient">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Solicitud de Traslado"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:fontFamily="@font/inter"
+            android:layout_marginBottom="24dp"/>
+
+        <include layout="@layout/component_form_user_selector" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Gestiona tus solicitudes de traslados en ambulancia."
+            android:textColor="@android:color/black"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="Desde este apartado podrás gestionar tu traslado con 72 horas de anticipación."
+            android:textColor="@android:color/black"
+            android:textSize="14sp" />
+
+        <include layout="@layout/component_form_file_attachment" />
+
+        <include layout="@layout/component_form_comments" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSolicitar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Solicitar Traslado"
+            android:backgroundTint="@android:color/white"
+            android:textColor="#2196F3"
+            app:cornerRadius="24dp"
+            android:textStyle="bold"
+            android:fontFamily="@font/inter"/>
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

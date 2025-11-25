@@ -3,9 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:layout_marginBottom="24dp">
+    android:background="@android:color/transparent">
 
-    <!-- Título y botón -->
+    <!-- Últimas gestiones -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -14,19 +14,19 @@
         android:layout_marginBottom="8dp">
 
         <TextView
-            android:id="@+id/titleTramites"
+            android:id="@+id/titleGestiones"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Últimos Trámites"
+            android:text="Últimas Gestiones"
             android:textStyle="bold"
             android:fontFamily="@font/inter"
             android:textColor="#FFFFFF"/>
 
         <Button
-            android:id="@+id/btnVerTramites"
+            android:id="@+id/btnVerGestiones"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Ver todos"
+            android:text="Ver todas"
             android:textSize="14sp"
             android:fontFamily="@font/inter"
             android:backgroundTint="#FFFFFF"
@@ -36,9 +36,11 @@
             android:minWidth="0dp"/>
     </LinearLayout>
 
-    <!-- Lista de trámites -->
+    <!-- RecyclerView para las gestiones -->
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerTramites"
+        android:id="@+id/recyclerGestiones"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"/>
+
 </LinearLayout>
