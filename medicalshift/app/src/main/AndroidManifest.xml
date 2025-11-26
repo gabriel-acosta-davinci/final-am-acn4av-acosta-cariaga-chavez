@@ -40,6 +40,21 @@
         <activity
             android:name=".MisDatosActivity"
             android:exported="false" />
+        <activity
+            android:name=".SeguridadActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MisDocumentosActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ReintegrosActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PagarFacturaActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ResumenPagosActivity"
+            android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

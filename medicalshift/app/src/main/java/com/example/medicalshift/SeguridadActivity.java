@@ -1,33 +1,53 @@
 package com.example.medicalshift;
 
 import android.os.Bundle;
-import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.textfield.TextInputEditText;
+
 import org.json.JSONArray;
 import org.json.JSONException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Random;
 
-public class MisDatosActivity extends AppCompatActivity {
+public class SeguridadActivity extends AppCompatActivity {
 
     private User currentUser;
+    private TextView tvToken;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_mis_datos);
+        setContentView(R.layout.activity_seguridad);
+
+        tvToken = findViewById(R.id.tvToken);
+        TextInputEditText etEmailRecuperacion = findViewById(R.id.etEmailRecuperacion);
+        MaterialButton btnEnviarCorreo = findViewById(R.id.btnEnviarCorreo);
+        MaterialButton btnGenerarToken = findViewById(R.id.btnGenerarToken);
 
         loadCurrentUser();
         updateUI();
 
-        Button btnEditar = findViewById(R.id.btnEditar);
-        btnEditar.setOnClickListener(v -> {
-            if (currentUser != null) {
-                EditarDatosBottomSheetFragment bottomSheet = EditarDatosBottomSheetFragment.newInstance(currentUser);
-                bottomSheet.show(getSupportFragmentManager(), bottomSheet.getTag());
+        btnEnviarCorreo.setOnClickListener(v -> {
+            String email = etEmailRecuperacion.getText().toString();
+            if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                etEmailRecuperacion.setError("Ingresá un email válido");
+            } else {
+                Toast.makeText(this, "Correo de recuperación enviado a " + email, Toast.LENGTH_LONG).show();
             }
+        });
+
+        btnGenerarToken.setOnClickListener(v -> {
+            String nuevoToken = String.format("%03d", new Random().nextInt(1000));
+            tvToken.setText(nuevoToken);
+            Toast.makeText(this, "Nuevo token generado: " + nuevoToken, Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -47,15 +67,7 @@ public class MisDatosActivity extends AppCompatActivity {
 
     private void updateUI() {
         if (currentUser != null) {
-            ((TextView) findViewById(R.id.dataNombreCompleto)).setText(currentUser.getNombreCompleto());
-            ((TextView) findViewById(R.id.dataNumeroDocumento)).setText(currentUser.getNumeroDocumento());
-            ((TextView) findViewById(R.id.dataFechaNacimiento)).setText(currentUser.getFechaNacimiento());
-            ((TextView) findViewById(R.id.dataPlan)).setText(currentUser.getPlan());
-            ((TextView) findViewById(R.id.dataNumeroAsociado)).setText(currentUser.getNumeroAsociado());
-            ((TextView) findViewById(R.id.dataEstadoCivil)).setText(currentUser.getEstadoCivil());
-            ((TextView) findViewById(R.id.dataEmail)).setText(currentUser.getEmail());
-            ((TextView) findViewById(R.id.dataTelefono)).setText(currentUser.getTelefono());
-            ((TextView) findViewById(R.id.dataDomicilio)).setText(currentUser.getDomicilio());
+            tvToken.setText(currentUser.getToken());
         }
     }
 

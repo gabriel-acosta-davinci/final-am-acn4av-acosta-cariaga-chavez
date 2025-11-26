@@ -1,0 +1,32 @@
+[
+  {
+    "userId": "35123456",
+    "nombreArchivo": "pedido_tomografia.pdf",
+    "tipoGestion": "Autorizaciones Previas",
+    "fecha": "10/11/2025"
+  },
+  {
+    "userId": "35123456",
+    "nombreArchivo": "factura_odontologo.jpg",
+    "tipoGestion": "Reintegros",
+    "fecha": "15/11/2025"
+  },
+  {
+    "userId": "40987654",
+    "nombreArchivo": "receta_oncologica.pdf",
+    "tipoGestion": "Medicamentos",
+    "fecha": "20/11/2025"
+  },
+  {
+    "userId": "35123456",
+    "nombreArchivo": "informe_medico_silla.pdf",
+    "tipoGestion": "Autorizaciones Previas",
+    "fecha": "01/11/2025"
+  },
+  {
+    "userId": "30111222",
+    "nombreArchivo": "recibo_kinesiologo.pdf",
+    "tipoGestion": "Reintegros",
+    "fecha": "18/11/2025"
+  }
+]

@@ -2,6 +2,8 @@
   {
     "Nombre Completo": "Gabriel Acosta",
     "Número de documento": "35123456",
+    "contraseña": "password123",
+    "token": "123",
     "Número de teléfono": "+54 221 555-0101",
     "Email": "gabriel.acosta@example.com",
     "Plan": "Plan Platino",
@@ -21,6 +23,8 @@
   {
     "Nombre Completo": "Sofía Martínez",
     "Número de documento": "40987654",
+    "contraseña": "password456",
+    "token": "456",
     "Número de teléfono": "+54 11 555-0102",
     "Email": "sofia.martinez@example.com",
     "Plan": "Plan Bronce",
@@ -40,6 +44,8 @@
   {
     "Nombre Completo": "Carlos Gómez",
     "Número de documento": "30111222",
+    "contraseña": "password789",
+    "token": "789",
     "Número de teléfono": "+54 351 555-0103",
     "Email": "carlos.gomez@example.com",
     "Plan": "Plan Plata",
@@ -59,6 +65,8 @@
   {
     "Nombre Completo": "Valentina Rodríguez",
     "Número de documento": "42333444",
+    "contraseña": "password101",
+    "token": "101",
     "Número de teléfono": "+54 223 555-0104",
     "Email": "valentina.r@example.com",
     "Plan": "Plan Oro",
@@ -78,6 +86,8 @@
   {
     "Nombre Completo": "Mateo Fernández",
     "Número de documento": "38555666",
+    "contraseña": "password112",
+    "token": "112",
     "Número de teléfono": "+54 221 555-0105",
     "Email": "mateo.fernandez@example.com",
     "Plan": "Plan Bronce",

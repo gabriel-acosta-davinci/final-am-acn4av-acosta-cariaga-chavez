@@ -45,8 +45,17 @@ public class PerfilFragment extends Fragment {
 
         PerfilOpcionAdapter adapter = new PerfilOpcionAdapter(opciones, opcion -> {
             if (opcion.equals("Mis Datos")) {
-                Intent intent = new Intent(getActivity(), MisDatosActivity.class);
-                startActivity(intent);
+                startActivity(new Intent(getActivity(), MisDatosActivity.class));
+            } else if (opcion.equals("Seguridad")) {
+                startActivity(new Intent(getActivity(), SeguridadActivity.class));
+            } else if (opcion.equals("Mis documentos")) {
+                startActivity(new Intent(getActivity(), MisDocumentosActivity.class));
+            } else if (opcion.equals("Cuenta de reintegro")) {
+                startActivity(new Intent(getActivity(), ReintegrosActivity.class));
+            } else if (opcion.equals("Ver facturas / Pagar")) {
+                startActivity(new Intent(getActivity(), PagarFacturaActivity.class));
+            } else if (opcion.equals("Resumen de cuenta / Pagos")) {
+                startActivity(new Intent(getActivity(), ResumenPagosActivity.class));
             } else {
                 Toast.makeText(getContext(), "Abriendo sección: " + opcion, Toast.LENGTH_SHORT).show();
             }

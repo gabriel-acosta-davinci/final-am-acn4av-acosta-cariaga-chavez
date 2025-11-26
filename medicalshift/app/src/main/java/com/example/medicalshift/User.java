@@ -14,13 +14,15 @@ public class User {
     private final String fechaNacimiento;
     private final String estadoCivil;
     private final String domicilioCompleto;
+    private final String localidad;
+    private final String contraseña;
+    private final String token;
 
     // Campos del domicilio
     private final String calle;
     private final String numero;
     private final String piso;
     private final String dpto;
-    private final String localidad;
     private final String provincia;
 
     public User(JSONObject object) throws JSONException {
@@ -33,6 +35,8 @@ public class User {
         this.cbu = object.getString("CBU");
         this.fechaNacimiento = object.getString("Fecha de nacimiento");
         this.estadoCivil = object.getString("Estado Civil");
+        this.contraseña = object.getString("contraseña");
+        this.token = object.getString("token");
 
         JSONObject dom = object.getJSONObject("Domicilio de Residencia");
         this.calle = dom.getString("Calle");
@@ -71,5 +75,6 @@ public class User {
     public String getNumero() { return numero; }
     public String getPiso() { return piso; }
     public String getDpto() { return dpto; }
-    public String getProvincia() { return provincia; }
+    public String getContraseña() { return contraseña; }
+    public String getToken() { return token; }
 }
