@@ -3,15 +3,12 @@ package com.example.medicalshift;
 import android.os.Bundle;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
-
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
-
 import org.json.JSONArray;
 import org.json.JSONException;
-
+import org.json.JSONObject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -27,12 +24,14 @@ public class SeguridadActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_seguridad);
 
+        String userId = getIntent().getStringExtra("LOGGED_IN_USER_ID");
+        loadCurrentUser(userId);
+
         tvToken = findViewById(R.id.tvToken);
         TextInputEditText etEmailRecuperacion = findViewById(R.id.etEmailRecuperacion);
         MaterialButton btnEnviarCorreo = findViewById(R.id.btnEnviarCorreo);
         MaterialButton btnGenerarToken = findViewById(R.id.btnGenerarToken);
 
-        loadCurrentUser();
         updateUI();
 
         btnEnviarCorreo.setOnClickListener(v -> {
@@ -51,17 +50,20 @@ public class SeguridadActivity extends AppCompatActivity {
         });
     }
 
-    private void loadCurrentUser() {
-        String json = loadJSONFromAsset("users.json");
-        if (json != null) {
-            try {
-                JSONArray usersArray = new JSONArray(json);
-                if (usersArray.length() > 0) {
-                    currentUser = new User(usersArray.getJSONObject(0));
+    private void loadCurrentUser(String userId) {
+        if (userId == null) return;
+        try {
+            String json = loadJSONFromAsset("users.json");
+            JSONArray usersArray = new JSONArray(json);
+            for (int i = 0; i < usersArray.length(); i++) {
+                JSONObject userObject = usersArray.getJSONObject(i);
+                if (userObject.getString("Número de documento").equals(userId)) {
+                    currentUser = new User(userObject);
+                    break;
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
             }
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
         }
     }
 
@@ -71,15 +73,12 @@ public class SeguridadActivity extends AppCompatActivity {
         }
     }
 
-    private String loadJSONFromAsset(String fileName) {
-        try (InputStream is = getAssets().open(fileName)) {
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            return new String(buffer, StandardCharsets.UTF_8);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            return null;
-        }
+    private String loadJSONFromAsset(String fileName) throws IOException {
+        InputStream is = getAssets().open(fileName);
+        int size = is.available();
+        byte[] buffer = new byte[size];
+        is.read(buffer);
+        is.close();
+        return new String(buffer, StandardCharsets.UTF_8);
     }
 }

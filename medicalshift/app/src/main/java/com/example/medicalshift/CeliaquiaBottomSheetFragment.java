@@ -21,8 +21,6 @@ public class CeliaquiaBottomSheetFragment extends BottomSheetDialogFragment impl
     private TextView tvArchivoAdjunto1, tvArchivoAdjunto2;
     private AttachmentHelper attachmentHelper;
     private Uri attachedFileUri1, attachedFileUri2;
-
-    // Marcador para saber qué botón se pulsó
     private int currentAttachmentRequest;
 
     public static CeliaquiaBottomSheetFragment newInstance(String userName) {
@@ -45,7 +43,6 @@ public class CeliaquiaBottomSheetFragment extends BottomSheetDialogFragment impl
 
         attachmentHelper = new AttachmentHelper(this, this);
 
-        // Encontrar Vistas
         etUserName = view.findViewById(R.id.etUserName);
         tvArchivoAdjunto1 = view.findViewById(R.id.tvArchivoAdjunto1);
         tvArchivoAdjunto2 = view.findViewById(R.id.tvArchivoAdjunto2);
@@ -55,28 +52,14 @@ public class CeliaquiaBottomSheetFragment extends BottomSheetDialogFragment impl
         MaterialButton btnAdjuntarArchivo2 = view.findViewById(R.id.btnAdjuntarArchivo2);
         MaterialButton btnSolicitar = view.findViewById(R.id.btnSolicitar);
 
-        // Cargar nombre de usuario
         if (getArguments() != null) {
             etUserName.setText(getArguments().getString("USER_NAME"));
         }
 
-        // Configurar Listeners
-        btnTomarFoto1.setOnClickListener(v -> {
-            currentAttachmentRequest = 1;
-            attachmentHelper.dispatchTakePictureIntent();
-        });
-        btnAdjuntarArchivo1.setOnClickListener(v -> {
-            currentAttachmentRequest = 1;
-            attachmentHelper.dispatchOpenDocumentIntent();
-        });
-        btnTomarFoto2.setOnClickListener(v -> {
-            currentAttachmentRequest = 2;
-            attachmentHelper.dispatchTakePictureIntent();
-        });
-        btnAdjuntarArchivo2.setOnClickListener(v -> {
-            currentAttachmentRequest = 2;
-            attachmentHelper.dispatchOpenDocumentIntent();
-        });
+        btnTomarFoto1.setOnClickListener(v -> { currentAttachmentRequest = 1; attachmentHelper.dispatchTakePictureIntent(); });
+        btnAdjuntarArchivo1.setOnClickListener(v -> { currentAttachmentRequest = 1; attachmentHelper.dispatchOpenDocumentIntent(); });
+        btnTomarFoto2.setOnClickListener(v -> { currentAttachmentRequest = 2; attachmentHelper.dispatchTakePictureIntent(); });
+        btnAdjuntarArchivo2.setOnClickListener(v -> { currentAttachmentRequest = 2; attachmentHelper.dispatchOpenDocumentIntent(); });
 
         btnSolicitar.setOnClickListener(v -> {
             String message = "Solicitud para Celiaquía enviada";

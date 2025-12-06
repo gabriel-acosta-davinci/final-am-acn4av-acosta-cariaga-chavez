@@ -21,23 +21,23 @@
     }
   },
   {
-    "Nombre Completo": "Sofía Martínez",
+    "Nombre Completo": "Arciel Acosta",
     "Número de documento": "40987654",
     "contraseña": "password456",
     "token": "456",
     "Número de teléfono": "+54 11 555-0102",
-    "Email": "sofia.martinez@example.com",
+    "Email": "arciel.acosta@example.com",
     "Plan": "Plan Bronce",
     "Número de asociado": "654321-02",
     "CBU": "0720123488000009876543",
     "Fecha de nacimiento": "1995-11-20",
-    "Estado Civil": "Soltero/a",
+    "Estado Civil": "Concubino/a",
     "Domicilio de Residencia": {
       "Calle": "Av. Corrientes",
       "Número": 1234,
       "Piso": "10",
       "Dpto": "B",
-      "Localidad": "CABA",
+      "Localidad": "La Plata",
       "Provincia": "Buenos Aires"
     }
   },

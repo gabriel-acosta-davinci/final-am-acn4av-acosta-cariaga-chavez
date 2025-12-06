@@ -38,7 +38,8 @@ public class MisDocumentosActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mis_documentos);
 
-        loadCurrentUser();
+        String userId = getIntent().getStringExtra("LOGGED_IN_USER_ID");
+        loadCurrentUser(userId);
 
         RecyclerView recyclerDocumentos = findViewById(R.id.recyclerMisDocumentos);
         recyclerDocumentos.setLayoutManager(new LinearLayoutManager(this));
@@ -52,17 +53,20 @@ public class MisDocumentosActivity extends AppCompatActivity {
         }
     }
 
-    private void loadCurrentUser() {
-        String json = loadJSONFromAsset("users.json");
-        if (json != null) {
-            try {
-                JSONArray usersArray = new JSONArray(json);
-                if (usersArray.length() > 0) {
-                    currentUser = new User(usersArray.getJSONObject(0));
+    private void loadCurrentUser(String userId) {
+        if (userId == null) return;
+        try {
+            String json = loadJSONFromAsset("users.json");
+            JSONArray usersArray = new JSONArray(json);
+            for (int i = 0; i < usersArray.length(); i++) {
+                JSONObject userObject = usersArray.getJSONObject(i);
+                if (userObject.getString("Número de documento").equals(userId)) {
+                    currentUser = new User(userObject);
+                    break;
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
             }
+        } catch (JSONException e) { // CORREGIDO: Solo se captura JSONException
+            e.printStackTrace();
         }
     }
 
@@ -76,7 +80,7 @@ public class MisDocumentosActivity extends AppCompatActivity {
                 JSONArray documentsArray = new JSONArray(json);
                 SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
                 Calendar cal = Calendar.getInstance();
-                cal.add(Calendar.MONTH, -1); // Restar un mes a la fecha actual
+                cal.add(Calendar.MONTH, -1); 
                 Date oneMonthAgo = cal.getTime();
 
                 for (int i = 0; i < documentsArray.length(); i++) {
@@ -101,6 +105,7 @@ public class MisDocumentosActivity extends AppCompatActivity {
             int size = is.available();
             byte[] buffer = new byte[size];
             is.read(buffer);
+            is.close();
             return new String(buffer, StandardCharsets.UTF_8);
         } catch (IOException ex) {
             ex.printStackTrace();

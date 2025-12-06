@@ -2,7 +2,6 @@ package com.example.medicalshift;
 
 import android.Manifest;
 import android.content.ContentResolver;
-import android.content.Context;
 import android.net.Uri;
 import android.webkit.MimeTypeMap;
 import androidx.activity.result.ActivityResultLauncher;

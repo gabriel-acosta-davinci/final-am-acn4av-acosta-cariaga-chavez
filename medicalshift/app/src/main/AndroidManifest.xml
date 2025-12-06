@@ -16,15 +16,20 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MedicalShift">
+
+        <!-- LoginActivity es ahora la pantalla de inicio -->
         <activity
-            android:name=".MainActivity"
+            android:name=".LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
         <activity
             android:name=".CartillaActivity"
             android:exported="false" />
@@ -54,6 +59,18 @@
             android:exported="false" />
         <activity
             android:name=".ResumenPagosActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PreguntasFrecuentesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AsistenciaViajeroActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CoberturasEspecialesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ContactoActivity"
             android:exported="false" />
 
         <provider

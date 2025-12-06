@@ -11,6 +11,13 @@
         android:layout_height="match_parent"
         android:layout_above="@+id/bottom_navigation"/>
 
+    <!-- Contenedor para el menú deslizante -->
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/menu_fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/bottom_navigation"/>
+
     <!-- Barra de navegación inferior -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"

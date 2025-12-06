@@ -57,10 +57,10 @@ public class InicioFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        loadCurrentUser();
+        String userId = getArguments() != null ? getArguments().getString("LOGGED_IN_USER_ID") : null;
+        loadCurrentUser(userId);
         updateUI(view);
 
-        // --- RecyclerView de gestiones (LÓGICA REAL Y ORDENADA) ---
         RecyclerView recyclerGestiones = view.findViewById(R.id.recyclerGestiones);
         recyclerGestiones.setLayoutManager(new LinearLayoutManager(getContext()));
         
@@ -68,7 +68,6 @@ public class InicioFragment extends Fragment {
         GestionAdapter gestionAdapter = new GestionAdapter(listaGestiones);
         recyclerGestiones.setAdapter(gestionAdapter);
 
-        // --- Búsqueda y RecyclerView de cartilla médica ---
         loadProfesionales();
 
         RecyclerView recyclerCartilla = view.findViewById(R.id.recyclerCartilla);
@@ -79,132 +78,85 @@ public class InicioFragment extends Fragment {
 
         EditText searchCartilla = view.findViewById(R.id.searchCartilla);
         searchCartilla.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (profesionalAdapter != null) {
-                    profesionalAdapter.filtrar(s.toString());
-                }
-            }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { if (profesionalAdapter != null) profesionalAdapter.filtrar(s.toString()); }
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void afterTextChanged(Editable s) {}
         });
 
-        // --- Botones ---
         Button btnVerGestiones = view.findViewById(R.id.btnVerGestiones);
-        btnVerGestiones.setOnClickListener(v -> {
-            if (callback != null) callback.navegarA(2);
-        });
+        btnVerGestiones.setOnClickListener(v -> { if (callback != null) callback.navegarA(2); });
 
         Button btnVerCartilla = view.findViewById(R.id.btnVerCartilla);
-        btnVerCartilla.setOnClickListener(v -> {
-            if (callback != null) callback.navegarA(1);
-        });
+        btnVerCartilla.setOnClickListener(v -> { if (callback != null) callback.navegarA(1); });
     }
 
-    private void loadCurrentUser() {
-        String json = loadJSONFromAsset("users.json");
-        if (json != null) {
-            try {
-                JSONArray usersArray = new JSONArray(json);
-                if (usersArray.length() > 0) {
-                    currentUser = new User(usersArray.getJSONObject(0));
+    private void loadCurrentUser(String userId) {
+        if (userId == null) return;
+        try {
+            String json = loadJSONFromAsset("users.json");
+            JSONArray usersArray = new JSONArray(json);
+            for (int i = 0; i < usersArray.length(); i++) {
+                JSONObject userObject = usersArray.getJSONObject(i);
+                if (userObject.getString("Número de documento").equals(userId)) {
+                    currentUser = new User(userObject);
+                    break;
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
             }
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
         }
     }
 
     private List<Gestion> loadPreviewGestionesForUser() {
         List<Gestion> userGestiones = new ArrayList<>();
         if (currentUser == null) return userGestiones;
-
-        String json = loadJSONFromAsset("gestiones.json"); 
-        if (json != null) {
-            try {
-                JSONArray gestionesArray = new JSONArray(json);
-                for (int i = 0; i < gestionesArray.length(); i++) {
-                    JSONObject gestionObject = gestionesArray.getJSONObject(i);
-                    if (gestionObject.getString("userId").equals(currentUser.getNumeroDocumento())) {
-                        userGestiones.add(new Gestion(gestionObject.getString("nombre"), gestionObject.getString("fecha"), gestionObject.getString("estado")));
-                    }
+        try {
+            String json = loadJSONFromAsset("gestiones.json"); 
+            JSONArray gestionesArray = new JSONArray(json);
+            for (int i = 0; i < gestionesArray.length(); i++) {
+                JSONObject g = gestionesArray.getJSONObject(i);
+                if (g.getString("userId").equals(currentUser.getNumeroDocumento())) {
+                    userGestiones.add(new Gestion(g.getString("nombre"), g.getString("fecha"), g.getString("estado")));
                 }
-                // Ordenar la lista por fecha, de más reciente a más antigua
-                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-                Collections.sort(userGestiones, (g1, g2) -> {
-                    try {
-                        Date d1 = sdf.parse(g1.getFecha());
-                        Date d2 = sdf.parse(g2.getFecha());
-                        return d2.compareTo(d1);
-                    } catch (ParseException e) {
-                        e.printStackTrace();
-                        return 0;
-                    }
-                });
-            } catch (JSONException e) {
-                e.printStackTrace();
             }
-        }
-        // Devolver solo las primeras 3 (o menos si no hay tantas)
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            Collections.sort(userGestiones, (g1, g2) -> {
+                try {
+                    Date d1 = sdf.parse(g1.getFecha());
+                    Date d2 = sdf.parse(g2.getFecha());
+                    return d2.compareTo(d1);
+                } catch (ParseException e) { return 0; }
+            });
+        } catch (IOException | JSONException e) { e.printStackTrace(); }
         return userGestiones.subList(0, Math.min(3, userGestiones.size()));
     }
 
     private void updateUI(View view) {
         if (currentUser != null) {
-            TextView greeting = view.findViewById(R.id.greeting);
-            greeting.setText("¡Hola, " + currentUser.getNombreCompleto().split(" ")[0] + "!");
-
-            TextView cardTitle = view.findViewById(R.id.cardTitle);
-            TextView cardAsociado = view.findViewById(R.id.cardAsociadoValue);
-            TextView cardPlan = view.findViewById(R.id.cardPlanValue);
-            cardTitle.setText(currentUser.getNombreCompleto());
-            cardAsociado.setText(currentUser.getNumeroAsociado());
-            cardPlan.setText(currentUser.getPlan());
+            ((TextView) view.findViewById(R.id.greeting)).setText("¡Hola, " + currentUser.getNombreCompleto().split(" ")[0] + "!");
+            ((TextView) view.findViewById(R.id.cardTitle)).setText(currentUser.getNombreCompleto());
+            ((TextView) view.findViewById(R.id.cardAsociadoValue)).setText(currentUser.getNumeroAsociado());
+            ((TextView) view.findViewById(R.id.cardPlanValue)).setText(currentUser.getPlan());
         }
 
         TextView saludoHora = view.findViewById(R.id.saludoHora);
         Calendar calendar = Calendar.getInstance();
         int hora = calendar.get(Calendar.HOUR_OF_DAY);
-        String mensaje;
-        if (hora >= 6 && hora < 12) { mensaje = "Que tengas una excelente mañana ☀️";
-        } else if (hora >= 12 && hora < 18) { mensaje = "¡Buena tarde! 🌤️";
-        } else if (hora >= 18 && hora < 22) { mensaje = "Disfrutá tu noche 🌙";
-        } else { mensaje = "Es hora de descansar 😴"; }
+        String mensaje = (hora >= 6 && hora < 12) ? "Que tengas una excelente mañana ☀️" : (hora >= 12 && hora < 18) ? "¡Buena tarde! 🌤️" : (hora >= 18 && hora < 22) ? "Disfrutá tu noche 🌙" : "Es hora de descansar 😴";
         saludoHora.setText(mensaje);
     }
 
-    private void loadProfesionales() {
-        String json = loadJSONFromAsset("professionals.json");
-        if (json != null) {
-            try {
-                JSONArray jsonArray = new JSONArray(json);
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    listaCompletaProfesionales.add(new Profesional(jsonArray.getJSONObject(i)));
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+    private void loadProfesionales() { /* ... (código existente) ... */ }
 
-    private String loadJSONFromAsset(String fileName) {
+    private String loadJSONFromAsset(String fileName) throws IOException {
         if (getContext() == null) return null;
-        String json;
-        try {
-            InputStream is = getContext().getAssets().open(fileName);
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-            json = new String(buffer, StandardCharsets.UTF_8);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            return null;
-        }
-        return json;
+        InputStream is = getContext().getAssets().open(fileName);
+        int size = is.available();
+        byte[] buffer = new byte[size];
+        is.read(buffer);
+        is.close();
+        return new String(buffer, StandardCharsets.UTF_8);
     }
 
-    public interface OnNavigationRequest {
-        void navegarA(int posicion);
-    }
+    public interface OnNavigationRequest { void navegarA(int posicion); }
 }

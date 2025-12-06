@@ -39,7 +39,8 @@ public class GestionesFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        loadCurrentUser(); // Cargar usuario actual
+        String userId = getArguments() != null ? getArguments().getString("LOGGED_IN_USER_ID") : null;
+        loadCurrentUser(userId);
 
         RecyclerView recyclerGestiones = view.findViewById(R.id.recyclerGestionesList);
         recyclerGestiones.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -51,67 +52,59 @@ public class GestionesFragment extends Fragment {
         MaterialButton btnNuevaGestion = view.findViewById(R.id.btnNuevaGestion);
         btnNuevaGestion.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), NuevaGestionActivity.class);
+            intent.putExtra("LOGGED_IN_USER_ID", currentUser.getNumeroDocumento());
             startActivity(intent);
         });
     }
 
-    private void loadCurrentUser() {
-        String json = loadJSONFromAsset("users.json");
-        if (json != null) {
-            try {
-                JSONArray usersArray = new JSONArray(json);
-                if (usersArray.length() > 0) {
-                    currentUser = new User(usersArray.getJSONObject(0));
+    private void loadCurrentUser(String userId) {
+        if (userId == null) return;
+        try {
+            String json = loadJSONFromAsset("users.json");
+            JSONArray usersArray = new JSONArray(json);
+            for (int i = 0; i < usersArray.length(); i++) {
+                JSONObject userObject = usersArray.getJSONObject(i);
+                if (userObject.getString("Número de documento").equals(userId)) {
+                    currentUser = new User(userObject);
+                    break;
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
             }
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
         }
     }
 
     private List<Gestion> loadGestionesForUser() {
         List<Gestion> userGestiones = new ArrayList<>();
         if (currentUser == null) return userGestiones;
-
-        String json = loadJSONFromAsset("gestiones.json"); 
-        if (json != null) {
-            try {
-                JSONArray gestionesArray = new JSONArray(json);
-                for (int i = 0; i < gestionesArray.length(); i++) {
-                    JSONObject gestionObject = gestionesArray.getJSONObject(i);
-                    if (gestionObject.getString("userId").equals(currentUser.getNumeroDocumento())) {
-                         userGestiones.add(new Gestion(gestionObject.getString("nombre"), gestionObject.getString("fecha"), gestionObject.getString("estado")));
-                    }
+        try {
+            String json = loadJSONFromAsset("gestiones.json"); 
+            JSONArray gestionesArray = new JSONArray(json);
+            for (int i = 0; i < gestionesArray.length(); i++) {
+                JSONObject g = gestionesArray.getJSONObject(i);
+                if (g.getString("userId").equals(currentUser.getNumeroDocumento())) {
+                     userGestiones.add(new Gestion(g.getString("nombre"), g.getString("fecha"), g.getString("estado")));
                 }
-                // Ordenar la lista por fecha, de más reciente a más antigua
-                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-                Collections.sort(userGestiones, (g1, g2) -> {
-                    try {
-                        Date d1 = sdf.parse(g1.getFecha());
-                        Date d2 = sdf.parse(g2.getFecha());
-                        return d2.compareTo(d1);
-                    } catch (ParseException e) {
-                        e.printStackTrace();
-                        return 0;
-                    }
-                });
-            } catch (JSONException e) {
-                e.printStackTrace();
             }
-        }
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            Collections.sort(userGestiones, (g1, g2) -> {
+                try {
+                    Date d1 = sdf.parse(g1.getFecha());
+                    Date d2 = sdf.parse(g2.getFecha());
+                    return d2.compareTo(d1);
+                } catch (ParseException e) { return 0; }
+            });
+        } catch (IOException | JSONException e) { e.printStackTrace(); }
         return userGestiones;
     }
 
-    private String loadJSONFromAsset(String fileName) {
+    private String loadJSONFromAsset(String fileName) throws IOException {
         if (getContext() == null) return null;
-        try (InputStream is = getContext().getAssets().open(fileName)) {
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            return new String(buffer, StandardCharsets.UTF_8);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            return null;
-        }
+        InputStream is = getContext().getAssets().open(fileName);
+        int size = is.available();
+        byte[] buffer = new byte[size];
+        is.read(buffer);
+        is.close();
+        return new String(buffer, StandardCharsets.UTF_8);
     }
 }
