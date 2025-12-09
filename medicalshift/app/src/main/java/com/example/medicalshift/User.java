@@ -71,6 +71,7 @@ public class User {
     public String getEstadoCivil() { return estadoCivil; }
     public String getDomicilio() { return domicilioCompleto; }
     public String getLocalidad() { return localidad; }
+    public String getProvincia() { return provincia; }
     public String getCalle() { return calle; }
     public String getNumero() { return numero; }
     public String getPiso() { return piso; }

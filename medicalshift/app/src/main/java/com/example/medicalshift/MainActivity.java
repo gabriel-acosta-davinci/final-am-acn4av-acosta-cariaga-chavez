@@ -18,7 +18,12 @@ public class MainActivity extends AppCompatActivity implements InicioFragment.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Obtener userId del Intent o del TokenManager
         String loggedInUserId = getIntent().getStringExtra("LOGGED_IN_USER_ID");
+        if (loggedInUserId == null) {
+            com.example.medicalshift.utils.TokenManager tokenManager = new com.example.medicalshift.utils.TokenManager(this);
+            loggedInUserId = tokenManager.getUserId();
+        }
 
         viewPager = findViewById(R.id.viewPager);
         bottomNavigationView = findViewById(R.id.bottom_navigation);

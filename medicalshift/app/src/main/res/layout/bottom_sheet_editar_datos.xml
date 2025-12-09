@@ -9,7 +9,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:padding="24dp"
+        android:paddingBottom="32dp">
 
         <TextView
             android:layout_width="wrap_content"
@@ -141,6 +142,39 @@
                     android:textColor="@android:color/black"/>
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
+
+        <!-- Provincia y Localidad -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Provincia"
+            android:textSize="14sp"
+            android:textColor="@android:color/black"
+            android:textStyle="bold"/>
+        
+        <Spinner
+            android:id="@+id/spinnerProvincia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/bg_spinner_bordered"/>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="Localidad"
+            android:textColorHint="@android:color/black"
+            app:hintTextColor="@android:color/black"
+            app:boxStrokeColor="@android:color/black">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etEditLocalidad"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/black"/>
+        </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnGuardarCambios"

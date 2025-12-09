@@ -31,86 +31,101 @@ import java.util.Locale;
 
 public class MisDocumentosActivity extends AppCompatActivity {
 
-    private User currentUser;
+    private RecyclerView recyclerDocumentos;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mis_documentos);
 
-        String userId = getIntent().getStringExtra("LOGGED_IN_USER_ID");
-        loadCurrentUser(userId);
-
-        RecyclerView recyclerDocumentos = findViewById(R.id.recyclerMisDocumentos);
+        recyclerDocumentos = findViewById(R.id.recyclerMisDocumentos);
         recyclerDocumentos.setLayoutManager(new LinearLayoutManager(this));
 
-        List<Documento> listaDocumentos = loadRecentDocumentsForUser();
-        DocumentoAdapter adapter = new DocumentoAdapter(listaDocumentos);
+        // Inicializar con lista vacía
+        DocumentoAdapter adapter = new DocumentoAdapter(new ArrayList<>());
         recyclerDocumentos.setAdapter(adapter);
 
-        if (listaDocumentos.isEmpty()) {
-            Toast.makeText(this, "No se encontraron documentos en el último mes.", Toast.LENGTH_LONG).show();
-        }
+        // Cargar documentos desde backend
+        loadRecentDocumentsForUser();
     }
 
     private void loadCurrentUser(String userId) {
-        if (userId == null) return;
-        try {
-            String json = loadJSONFromAsset("users.json");
-            JSONArray usersArray = new JSONArray(json);
-            for (int i = 0; i < usersArray.length(); i++) {
-                JSONObject userObject = usersArray.getJSONObject(i);
-                if (userObject.getString("Número de documento").equals(userId)) {
-                    currentUser = new User(userObject);
-                    break;
-                }
-            }
-        } catch (JSONException e) { // CORREGIDO: Solo se captura JSONException
-            e.printStackTrace();
-        }
+        // Ya no necesitamos cargar usuario desde JSON, se usa el token
     }
 
-    private List<Documento> loadRecentDocumentsForUser() {
-        List<Documento> userDocuments = new ArrayList<>();
-        if (currentUser == null) return userDocuments;
+    private void loadRecentDocumentsForUser() {
+        com.example.medicalshift.utils.TokenManager tokenManager = new com.example.medicalshift.utils.TokenManager(this);
+        String token = tokenManager.getToken();
+        
+        if (token == null) {
+            android.util.Log.e("MisDocumentosActivity", "Token es null");
+            Toast.makeText(this, "Sesión expirada. Por favor, inicia sesión nuevamente.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-        String json = loadJSONFromAsset("documentos_historial.json");
-        if (json != null) {
-            try {
-                JSONArray documentsArray = new JSONArray(json);
-                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-                Calendar cal = Calendar.getInstance();
-                cal.add(Calendar.MONTH, -1); 
-                Date oneMonthAgo = cal.getTime();
+        String authHeader = "Bearer " + token;
+        android.util.Log.d("MisDocumentosActivity", "Cargando documentos...");
 
-                for (int i = 0; i < documentsArray.length(); i++) {
-                    JSONObject docObject = documentsArray.getJSONObject(i);
-                    if (docObject.getString("userId").equals(currentUser.getNumeroDocumento())) {
-                        Date docDate = sdf.parse(docObject.getString("fecha"));
-                        if (docDate.after(oneMonthAgo)) {
-                            userDocuments.add(new Documento(docObject));
+        com.example.medicalshift.api.RetrofitClient.getInstance().getApiService()
+                .getDocuments(authHeader, null, 50)
+                .enqueue(new retrofit2.Callback<com.example.medicalshift.models.DocumentListResponse>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<com.example.medicalshift.models.DocumentListResponse> call, 
+                                         retrofit2.Response<com.example.medicalshift.models.DocumentListResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            com.example.medicalshift.models.DocumentListResponse docResponse = response.body();
+                            List<com.example.medicalshift.models.DocumentListResponse.DocumentItem> documents = docResponse.getDocuments();
+                            
+                            android.util.Log.d("MisDocumentosActivity", "Documentos recibidos: " + (documents != null ? documents.size() : 0));
+                            
+                            List<Documento> userDocuments = new ArrayList<>();
+                            if (documents != null) {
+                                for (com.example.medicalshift.models.DocumentListResponse.DocumentItem item : documents) {
+                                    try {
+                                        android.util.Log.d("MisDocumentosActivity", "Documento: " + item.getOriginalName() + ", gestionId: " + item.getGestionId() + ", uploadedAt: " + item.getUploadedAt());
+                                        userDocuments.add(new Documento(item));
+                                    } catch (Exception e) {
+                                        android.util.Log.e("MisDocumentosActivity", "Error creando Documento", e);
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                            
+                            android.util.Log.d("MisDocumentosActivity", "Documentos procesados: " + userDocuments.size());
+                            
+                            DocumentoAdapter adapter = new DocumentoAdapter(userDocuments);
+                            recyclerDocumentos.setAdapter(adapter);
+                            
+                            if (userDocuments.isEmpty()) {
+                                Toast.makeText(MisDocumentosActivity.this, 
+                                    "No se encontraron documentos en los últimos 3 meses.", 
+                                    Toast.LENGTH_LONG).show();
+                            }
+                        } else {
+                            android.util.Log.e("MisDocumentosActivity", "Error en respuesta: " + response.code());
+                            if (response.errorBody() != null) {
+                                try {
+                                    String errorBody = response.errorBody().string();
+                                    android.util.Log.e("MisDocumentosActivity", "Error body: " + errorBody);
+                                } catch (Exception e) {
+                                    android.util.Log.e("MisDocumentosActivity", "Error leyendo error body", e);
+                                }
+                            }
+                            Toast.makeText(MisDocumentosActivity.this, 
+                                "Error al cargar documentos: " + response.code(), 
+                                Toast.LENGTH_SHORT).show();
                         }
                     }
-                }
-                Collections.sort(userDocuments, (d1, d2) -> d2.getFecha().compareTo(d1.getFecha()));
-            } catch (JSONException | ParseException e) {
-                e.printStackTrace();
-            }
-        }
-        return userDocuments;
-    }
 
-    private String loadJSONFromAsset(String fileName) {
-        try (InputStream is = getAssets().open(fileName)) {
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-            return new String(buffer, StandardCharsets.UTF_8);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            return null;
-        }
+                    @Override
+                    public void onFailure(retrofit2.Call<com.example.medicalshift.models.DocumentListResponse> call, Throwable t) {
+                        android.util.Log.e("MisDocumentosActivity", "Error de conexión", t);
+                        Toast.makeText(MisDocumentosActivity.this, 
+                            "Error de conexión: " + t.getMessage(), 
+                            Toast.LENGTH_SHORT).show();
+                        t.printStackTrace();
+                    }
+                });
     }
     
     // --- CLASES INTERNAS Y ADAPTADOR ---
@@ -123,6 +138,18 @@ public class MisDocumentosActivity extends AppCompatActivity {
             this.tipoGestion = object.getString("tipoGestion");
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
             this.fecha = sdf.parse(object.getString("fecha"));
+        }
+
+        public Documento(com.example.medicalshift.models.DocumentListResponse.DocumentItem item) {
+            this.nombreArchivo = item.getOriginalName() != null ? item.getOriginalName() : item.getFileName();
+            this.tipoGestion = item.getGestionId() != null ? "Gestión: " + item.getGestionId() : "Documento";
+            
+            // Convertir timestamp a Date
+            if (item.getUploadedAt() != null) {
+                this.fecha = new Date(item.getUploadedAt());
+            } else {
+                this.fecha = new Date();
+            }
         }
 
         public String getFechaAsString() {

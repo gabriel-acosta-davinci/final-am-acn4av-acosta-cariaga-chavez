@@ -5,29 +5,29 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.example.medicalshift.api.RetrofitClient;
+import com.example.medicalshift.models.GestionResponse;
+import com.example.medicalshift.utils.TokenManager;
 import com.google.android.material.button.MaterialButton;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 public class GestionesFragment extends Fragment {
 
-    private User currentUser;
+    private String userId;
+    private TokenManager tokenManager;
+    private RecyclerView recyclerGestiones;
+    private GestionAdapter adapter;
 
     @Nullable
     @Override
@@ -39,72 +39,112 @@ public class GestionesFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        String userId = getArguments() != null ? getArguments().getString("LOGGED_IN_USER_ID") : null;
-        loadCurrentUser(userId);
+        tokenManager = new TokenManager(requireContext());
+        userId = tokenManager.getUserId();
+        
+        if (userId == null) {
+            userId = getArguments() != null ? getArguments().getString("LOGGED_IN_USER_ID") : null;
+            if (userId != null) {
+                tokenManager.saveUserId(userId);
+            }
+        }
 
-        RecyclerView recyclerGestiones = view.findViewById(R.id.recyclerGestionesList);
+        recyclerGestiones = view.findViewById(R.id.recyclerGestionesList);
         recyclerGestiones.setLayoutManager(new LinearLayoutManager(getContext()));
 
-        List<Gestion> listaGestiones = loadGestionesForUser();
-        GestionAdapter adapter = new GestionAdapter(listaGestiones);
+        // Inicializar con lista vacía
+        adapter = new GestionAdapter(new ArrayList<>());
         recyclerGestiones.setAdapter(adapter);
+
+        // Cargar gestiones desde backend
+        loadGestionesFromBackend();
 
         MaterialButton btnNuevaGestion = view.findViewById(R.id.btnNuevaGestion);
         btnNuevaGestion.setOnClickListener(v -> {
             Intent intent = new Intent(getActivity(), NuevaGestionActivity.class);
-            intent.putExtra("LOGGED_IN_USER_ID", currentUser.getNumeroDocumento());
+            intent.putExtra("LOGGED_IN_USER_ID", userId);
             startActivity(intent);
         });
     }
 
-    private void loadCurrentUser(String userId) {
-        if (userId == null) return;
-        try {
-            String json = loadJSONFromAsset("users.json");
-            JSONArray usersArray = new JSONArray(json);
-            for (int i = 0; i < usersArray.length(); i++) {
-                JSONObject userObject = usersArray.getJSONObject(i);
-                if (userObject.getString("Número de documento").equals(userId)) {
-                    currentUser = new User(userObject);
-                    break;
-                }
-            }
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Recargar gestiones cuando vuelve a la pantalla (por si se creó una nueva)
+        if (userId != null) {
+            loadGestionesFromBackend();
         }
     }
 
-    private List<Gestion> loadGestionesForUser() {
-        List<Gestion> userGestiones = new ArrayList<>();
-        if (currentUser == null) return userGestiones;
-        try {
-            String json = loadJSONFromAsset("gestiones.json"); 
-            JSONArray gestionesArray = new JSONArray(json);
-            for (int i = 0; i < gestionesArray.length(); i++) {
-                JSONObject g = gestionesArray.getJSONObject(i);
-                if (g.getString("userId").equals(currentUser.getNumeroDocumento())) {
-                     userGestiones.add(new Gestion(g.getString("nombre"), g.getString("fecha"), g.getString("estado")));
-                }
-            }
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-            Collections.sort(userGestiones, (g1, g2) -> {
-                try {
-                    Date d1 = sdf.parse(g1.getFecha());
-                    Date d2 = sdf.parse(g2.getFecha());
-                    return d2.compareTo(d1);
-                } catch (ParseException e) { return 0; }
-            });
-        } catch (IOException | JSONException e) { e.printStackTrace(); }
-        return userGestiones;
-    }
+    private void loadGestionesFromBackend() {
+        if (userId == null) {
+            android.util.Log.e("GestionesFragment", "userId es null");
+            Toast.makeText(getContext(), "Usuario no identificado", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-    private String loadJSONFromAsset(String fileName) throws IOException {
-        if (getContext() == null) return null;
-        InputStream is = getContext().getAssets().open(fileName);
-        int size = is.available();
-        byte[] buffer = new byte[size];
-        is.read(buffer);
-        is.close();
-        return new String(buffer, StandardCharsets.UTF_8);
+        String token = tokenManager.getToken();
+        if (token == null) {
+            android.util.Log.e("GestionesFragment", "token es null");
+            Toast.makeText(getContext(), "Sesión expirada. Por favor, inicia sesión nuevamente.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String authHeader = "Bearer " + token;
+        
+        android.util.Log.d("GestionesFragment", "Cargando gestiones para userId: " + userId);
+
+        RetrofitClient.getInstance().getApiService().getGestiones(authHeader, userId, null, 20)
+                .enqueue(new Callback<GestionResponse>() {
+                    @Override
+                    public void onResponse(Call<GestionResponse> call, Response<GestionResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            GestionResponse gestionResponse = response.body();
+                            List<Gestion> gestiones = gestionResponse.getGestiones();
+                            
+                            android.util.Log.d("GestionesFragment", "Gestiones recibidas: " + (gestiones != null ? gestiones.size() : 0));
+                            
+                            if (gestiones != null && !gestiones.isEmpty()) {
+                                // Filtrar gestiones por userId como medida de seguridad adicional
+                                List<Gestion> gestionesFiltradas = new ArrayList<>();
+                                for (Gestion gestion : gestiones) {
+                                    android.util.Log.d("GestionesFragment", "Gestión: nombre=" + gestion.getNombre() + ", userId=" + gestion.getUserId() + ", fecha=" + gestion.getFecha());
+                                    if (userId.equals(gestion.getUserId())) {
+                                        gestionesFiltradas.add(gestion);
+                                    } else {
+                                        android.util.Log.w("GestionesFragment", "Gestión filtrada (userId no coincide): " + gestion.getNombre() + " (userId: " + gestion.getUserId() + " vs esperado: " + userId + ")");
+                                    }
+                                }
+                                
+                                android.util.Log.d("GestionesFragment", "Gestiones después del filtro: " + gestionesFiltradas.size());
+                                
+                                adapter = new GestionAdapter(gestionesFiltradas);
+                                recyclerGestiones.setAdapter(adapter);
+                            } else {
+                                android.util.Log.d("GestionesFragment", "No hay gestiones para mostrar");
+                                adapter = new GestionAdapter(new ArrayList<>());
+                                recyclerGestiones.setAdapter(adapter);
+                            }
+                        } else {
+                            android.util.Log.e("GestionesFragment", "Error en respuesta: " + response.code());
+                            if (response.errorBody() != null) {
+                                try {
+                                    String errorBody = response.errorBody().string();
+                                    android.util.Log.e("GestionesFragment", "Error body: " + errorBody);
+                                } catch (Exception e) {
+                                    android.util.Log.e("GestionesFragment", "Error leyendo error body", e);
+                                }
+                            }
+                            Toast.makeText(getContext(), "Error al cargar gestiones", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<GestionResponse> call, Throwable t) {
+                        android.util.Log.e("GestionesFragment", "Error de conexión", t);
+                        Toast.makeText(getContext(), "Error de conexión", Toast.LENGTH_SHORT).show();
+                        t.printStackTrace();
+                    }
+                });
     }
 }

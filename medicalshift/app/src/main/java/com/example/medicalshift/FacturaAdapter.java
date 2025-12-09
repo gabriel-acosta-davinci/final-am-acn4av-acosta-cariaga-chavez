@@ -32,11 +32,11 @@ public class FacturaAdapter extends RecyclerView.Adapter<FacturaAdapter.ViewHold
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Factura factura = facturas.get(position);
-        holder.periodo.setText("Período: " + factura.periodo);
-        holder.monto.setText(String.format(Locale.getDefault(), "Monto: $%.2f", factura.monto));
-        holder.estado.setText("Estado: " + factura.estado);
+        holder.periodo.setText("Período: " + factura.getPeriodo());
+        holder.monto.setText(String.format(Locale.getDefault(), "Monto: $%.2f", factura.getMonto()));
+        holder.estado.setText("Estado: " + factura.getEstado());
 
-        if (factura.estado.equals("Pendiente")) {
+        if (factura.getEstado().equals("Pendiente")) {
             holder.btnPagar.setVisibility(View.VISIBLE);
             holder.btnPagar.setOnClickListener(v -> {
                 // Crear el Intent para abrir una URL

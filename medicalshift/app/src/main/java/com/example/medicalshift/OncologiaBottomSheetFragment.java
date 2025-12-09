@@ -13,6 +13,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.example.medicalshift.utils.GestionHelper;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.button.MaterialButton;
 
@@ -25,6 +26,7 @@ public class OncologiaBottomSheetFragment extends BottomSheetDialogFragment impl
     private TextView tvArchivoAdjunto;
     private AttachmentHelper attachmentHelper;
     private Uri attachedFileUri; // Para guardar la referencia al archivo
+    private MaterialButton btnSolicitar;
 
     public static OncologiaBottomSheetFragment newInstance(String userName) {
         OncologiaBottomSheetFragment fragment = new OncologiaBottomSheetFragment();
@@ -53,7 +55,7 @@ public class OncologiaBottomSheetFragment extends BottomSheetDialogFragment impl
         tvArchivoAdjunto = view.findViewById(R.id.tvArchivoAdjunto);
         MaterialButton btnTomarFoto = view.findViewById(R.id.btnTomarFoto);
         MaterialButton btnAdjuntarArchivo = view.findViewById(R.id.btnAdjuntarArchivo);
-        MaterialButton btnSolicitar = view.findViewById(R.id.btnSolicitar);
+        btnSolicitar = view.findViewById(R.id.btnSolicitar);
 
         // Cargar nombre de usuario
         if (getArguments() != null) {
@@ -67,13 +69,54 @@ public class OncologiaBottomSheetFragment extends BottomSheetDialogFragment impl
         btnAdjuntarArchivo.setOnClickListener(v -> attachmentHelper.dispatchOpenDocumentIntent());
 
         btnSolicitar.setOnClickListener(v -> {
-            String message = "Solicitud enviada";
-            if (attachedFileUri != null) {
-                message += " con el archivo adjunto: " + tvArchivoAdjunto.getText();
+            android.util.Log.d("OncologiaBottomSheet", "Botón Solicitar presionado");
+            
+            // Validar campos
+            String fechaAplicacion = etFechaAplicacion.getText().toString().trim();
+            if (fechaAplicacion.isEmpty()) {
+                etFechaAplicacion.setError("Seleccioná una fecha");
+                android.util.Log.w("OncologiaBottomSheet", "Fecha no seleccionada");
+                return;
             }
-            Toast.makeText(getContext(), message + " (simulación)", Toast.LENGTH_LONG).show();
-            dismiss(); 
+
+            android.util.Log.d("OncologiaBottomSheet", "Fecha seleccionada: " + fechaAplicacion);
+            android.util.Log.d("OncologiaBottomSheet", "Archivo adjunto: " + (attachedFileUri != null ? attachedFileUri.toString() : "null"));
+
+            // Crear gestión y subir archivo
+            crearGestionYSubirArchivo("Oncología", fechaAplicacion);
         });
+    }
+
+    private void crearGestionYSubirArchivo(String nombreGestion, String fechaAplicacion) {
+        android.util.Log.d("OncologiaBottomSheet", "Iniciando creación de gestión: " + nombreGestion);
+        
+        btnSolicitar.setEnabled(false);
+        btnSolicitar.setText("Enviando...");
+
+        GestionHelper.crearGestionYSubirArchivo(
+            requireContext(),
+            nombreGestion,
+            fechaAplicacion,
+            attachedFileUri,
+            new GestionHelper.GestionCallback() {
+                @Override
+                public void onSuccess(String gestionId) {
+                    android.util.Log.d("OncologiaBottomSheet", "Gestión creada exitosamente: " + gestionId);
+                    btnSolicitar.setEnabled(true);
+                    btnSolicitar.setText("Solicitar");
+                    Toast.makeText(getContext(), "Solicitud enviada correctamente", Toast.LENGTH_LONG).show();
+                    dismiss();
+                }
+
+                @Override
+                public void onError(String message) {
+                    android.util.Log.e("OncologiaBottomSheet", "Error: " + message);
+                    btnSolicitar.setEnabled(true);
+                    btnSolicitar.setText("Solicitar");
+                    Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+                }
+            }
+        );
     }
 
     private void showDatePickerDialog() {

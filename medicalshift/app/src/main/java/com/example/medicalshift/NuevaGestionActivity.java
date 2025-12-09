@@ -26,14 +26,16 @@ import java.util.List;
 
 public class NuevaGestionActivity extends AppCompatActivity {
 
-    private User currentUser;
+    private com.example.medicalshift.models.UserResponse currentUser;
+    private com.example.medicalshift.utils.TokenManager tokenManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_nueva_gestion);
 
-        loadCurrentUser();
+        tokenManager = new com.example.medicalshift.utils.TokenManager(this);
+        loadCurrentUserFromBackend();
 
         RecyclerView recyclerGestionOpciones = findViewById(R.id.recyclerGestionOpciones);
         recyclerGestionOpciones.setLayoutManager(new LinearLayoutManager(this));
@@ -52,20 +54,23 @@ public class NuevaGestionActivity extends AppCompatActivity {
                 return;
             }
             
+            String userName = currentUser.getFullName() != null ? currentUser.getFullName() : "Usuario";
+            String cbu = currentUser.getCbu() != null ? currentUser.getCbu() : "";
+            
             if (opcion.getNombre().equals("Medicamentos")) {
                 Intent intent = new Intent(this, MedicamentosActivity.class);
                 startActivity(intent);
             } else if (opcion.getNombre().equals("Autorizaciones Previas")) {
-                AutorizacionesPreviasBottomSheetFragment bottomSheet = AutorizacionesPreviasBottomSheetFragment.newInstance(currentUser.getNombreCompleto());
+                AutorizacionesPreviasBottomSheetFragment bottomSheet = AutorizacionesPreviasBottomSheetFragment.newInstance(userName);
                 bottomSheet.show(getSupportFragmentManager(), bottomSheet.getTag());
             } else if (opcion.getNombre().equals("Programa de Celiaquía")) {
-                CeliaquiaBottomSheetFragment bottomSheet = CeliaquiaBottomSheetFragment.newInstance(currentUser.getNombreCompleto());
+                CeliaquiaBottomSheetFragment bottomSheet = CeliaquiaBottomSheetFragment.newInstance(userName);
                 bottomSheet.show(getSupportFragmentManager(), bottomSheet.getTag());
             } else if (opcion.getNombre().equals("Reintegros")) {
-                ReintegrosBottomSheetFragment bottomSheet = ReintegrosBottomSheetFragment.newInstance(currentUser.getNombreCompleto(), currentUser.getCbu());
+                ReintegrosBottomSheetFragment bottomSheet = ReintegrosBottomSheetFragment.newInstance(userName, cbu);
                 bottomSheet.show(getSupportFragmentManager(), bottomSheet.getTag());
             } else if (opcion.getNombre().equals("Traslados")) {
-                TrasladosBottomSheetFragment bottomSheet = TrasladosBottomSheetFragment.newInstance(currentUser.getNombreCompleto());
+                TrasladosBottomSheetFragment bottomSheet = TrasladosBottomSheetFragment.newInstance(userName);
                 bottomSheet.show(getSupportFragmentManager(), bottomSheet.getTag());
             } else {
                 Toast.makeText(this, "Iniciando gestión de: " + opcion.getNombre(), Toast.LENGTH_SHORT).show();
@@ -75,32 +80,30 @@ public class NuevaGestionActivity extends AppCompatActivity {
         recyclerGestionOpciones.setAdapter(adapter);
     }
 
-    private void loadCurrentUser() {
-        String json = loadJSONFromAsset("users.json");
-        if (json != null) {
-            try {
-                JSONArray usersArray = new JSONArray(json);
-                if (usersArray.length() > 0) {
-                    currentUser = new User(usersArray.getJSONObject(0));
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
+    private void loadCurrentUserFromBackend() {
+        String token = tokenManager.getToken();
+        if (token == null) {
+            Toast.makeText(this, "Sesión expirada", Toast.LENGTH_SHORT).show();
+            return;
         }
-    }
 
-    private String loadJSONFromAsset(String fileName) {
-        try {
-            InputStream is = getAssets().open(fileName);
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-            return new String(buffer, StandardCharsets.UTF_8);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            return null;
-        }
+        String authHeader = "Bearer " + token;
+        com.example.medicalshift.api.RetrofitClient.getInstance().getApiService()
+                .getCurrentUser(authHeader)
+                .enqueue(new retrofit2.Callback<com.example.medicalshift.models.UserResponse>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<com.example.medicalshift.models.UserResponse> call,
+                                         retrofit2.Response<com.example.medicalshift.models.UserResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            currentUser = response.body();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<com.example.medicalshift.models.UserResponse> call, Throwable t) {
+                        Toast.makeText(NuevaGestionActivity.this, "Error al cargar usuario", Toast.LENGTH_SHORT).show();
+                    }
+                });
     }
 
     // --- CLASES INTERNAS Y ADAPTADOR ---

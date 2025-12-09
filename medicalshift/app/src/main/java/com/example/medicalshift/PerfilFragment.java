@@ -40,8 +40,17 @@ public class PerfilFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        String userId = getArguments() != null ? getArguments().getString("LOGGED_IN_USER_ID") : null;
-        loadCurrentUser(userId);
+        com.example.medicalshift.utils.TokenManager tokenManager = new com.example.medicalshift.utils.TokenManager(requireContext());
+        String userId = tokenManager.getUserId();
+        
+        if (userId == null) {
+            userId = getArguments() != null ? getArguments().getString("LOGGED_IN_USER_ID") : null;
+            if (userId != null) {
+                tokenManager.saveUserId(userId);
+            }
+        }
+        
+        loadCurrentUserFromBackend(tokenManager);
 
         RecyclerView recyclerOpciones = view.findViewById(R.id.recyclerPerfilOpciones);
         recyclerOpciones.setLayoutManager(new LinearLayoutManager(getContext()));
@@ -54,37 +63,38 @@ public class PerfilFragment extends Fragment {
         opciones.add("Ver facturas / Pagar");
         opciones.add("Resumen de cuenta / Pagos");
 
+        String finalUserId = userId; // Para usar en el lambda
         PerfilOpcionAdapter adapter = new PerfilOpcionAdapter(opciones, opcion -> {
             Intent intent;
             switch (opcion) {
                 case "Mis Datos":
                     intent = new Intent(getActivity(), MisDatosActivity.class);
-                    intent.putExtra("LOGGED_IN_USER_ID", currentUser.getNumeroDocumento());
+                    if (finalUserId != null) intent.putExtra("LOGGED_IN_USER_ID", finalUserId);
                     startActivity(intent);
                     break;
                 case "Seguridad":
                     intent = new Intent(getActivity(), SeguridadActivity.class);
-                    intent.putExtra("LOGGED_IN_USER_ID", currentUser.getNumeroDocumento());
+                    if (finalUserId != null) intent.putExtra("LOGGED_IN_USER_ID", finalUserId);
                     startActivity(intent);
                     break;
                 case "Mis documentos":
                     intent = new Intent(getActivity(), MisDocumentosActivity.class);
-                    intent.putExtra("LOGGED_IN_USER_ID", currentUser.getNumeroDocumento());
+                    if (finalUserId != null) intent.putExtra("LOGGED_IN_USER_ID", finalUserId);
                     startActivity(intent);
                     break;
                 case "Cuenta de reintegro":
                     intent = new Intent(getActivity(), ReintegrosActivity.class);
-                    intent.putExtra("LOGGED_IN_USER_ID", currentUser.getNumeroDocumento());
+                    if (finalUserId != null) intent.putExtra("LOGGED_IN_USER_ID", finalUserId);
                     startActivity(intent);
                     break;
                 case "Ver facturas / Pagar":
                     intent = new Intent(getActivity(), PagarFacturaActivity.class);
-                    intent.putExtra("LOGGED_IN_USER_ID", currentUser.getNumeroDocumento());
+                    if (finalUserId != null) intent.putExtra("LOGGED_IN_USER_ID", finalUserId);
                     startActivity(intent);
                     break;
                 case "Resumen de cuenta / Pagos":
                     intent = new Intent(getActivity(), ResumenPagosActivity.class);
-                    intent.putExtra("LOGGED_IN_USER_ID", currentUser.getNumeroDocumento());
+                    if (finalUserId != null) intent.putExtra("LOGGED_IN_USER_ID", finalUserId);
                     startActivity(intent);
                     break;
                 default:
@@ -96,37 +106,38 @@ public class PerfilFragment extends Fragment {
 
         MaterialButton btnLogout = view.findViewById(R.id.btnLogout);
         btnLogout.setOnClickListener(v -> {
+            // Limpiar token y datos de sesión
+            tokenManager.clear();
             Intent intent = new Intent(getActivity(), LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
         });
     }
 
-    private void loadCurrentUser(String userId) {
-        if (userId == null) return;
-        try {
-            String json = loadJSONFromAsset("users.json");
-            JSONArray usersArray = new JSONArray(json);
-            for (int i = 0; i < usersArray.length(); i++) {
-                JSONObject userObject = usersArray.getJSONObject(i);
-                if (userObject.getString("Número de documento").equals(userId)) {
-                    currentUser = new User(userObject);
-                    break;
-                }
-            }
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
+    private void loadCurrentUserFromBackend(com.example.medicalshift.utils.TokenManager tokenManager) {
+        String token = tokenManager.getToken();
+        if (token == null) {
+            return;
         }
-    }
 
-    private String loadJSONFromAsset(String fileName) throws IOException {
-        if (getContext() == null) return null;
-        InputStream is = getContext().getAssets().open(fileName);
-        int size = is.available();
-        byte[] buffer = new byte[size];
-        is.read(buffer);
-        is.close();
-        return new String(buffer, StandardCharsets.UTF_8);
+        String authHeader = "Bearer " + token;
+        com.example.medicalshift.api.RetrofitClient.getInstance().getApiService()
+                .getCurrentUser(authHeader)
+                .enqueue(new retrofit2.Callback<com.example.medicalshift.models.UserResponse>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<com.example.medicalshift.models.UserResponse> call,
+                                         retrofit2.Response<com.example.medicalshift.models.UserResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            // Usuario cargado desde backend, ya no necesitamos currentUser local
+                            // pero mantenemos la estructura por compatibilidad
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<com.example.medicalshift.models.UserResponse> call, Throwable t) {
+                        // Error silencioso, la app puede funcionar sin cargar usuario completo
+                    }
+                });
     }
 
     // --- ADAPTADOR PARA LAS OPCIONES DEL PERFIL ---

@@ -13,6 +13,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.example.medicalshift.utils.GestionHelper;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.button.MaterialButton;
 
@@ -25,6 +26,7 @@ public class AutorizacionBottomSheetFragment extends BottomSheetDialogFragment i
     private TextView tvArchivoAdjunto;
     private AttachmentHelper attachmentHelper;
     private Uri attachedFileUri;
+    private MaterialButton btnSolicitar;
 
     public static AutorizacionBottomSheetFragment newInstance(String userName) {
         AutorizacionBottomSheetFragment fragment = new AutorizacionBottomSheetFragment();
@@ -52,7 +54,7 @@ public class AutorizacionBottomSheetFragment extends BottomSheetDialogFragment i
         tvArchivoAdjunto = view.findViewById(R.id.tvArchivoAdjunto);
         MaterialButton btnTomarFoto = view.findViewById(R.id.btnTomarFoto);
         MaterialButton btnAdjuntarArchivo = view.findViewById(R.id.btnAdjuntarArchivo);
-        MaterialButton btnSolicitar = view.findViewById(R.id.btnSolicitar);
+        btnSolicitar = view.findViewById(R.id.btnSolicitar);
 
         // Cargar nombre de usuario
         if (getArguments() != null) {
@@ -66,13 +68,44 @@ public class AutorizacionBottomSheetFragment extends BottomSheetDialogFragment i
         btnAdjuntarArchivo.setOnClickListener(v -> attachmentHelper.dispatchOpenDocumentIntent());
 
         btnSolicitar.setOnClickListener(v -> {
-            String message = "Solicitud de Autorización Previa enviada";
-            if (attachedFileUri != null) {
-                message += " con el archivo adjunto: " + tvArchivoAdjunto.getText();
+            // Validar campos
+            String fechaAplicacion = etFechaAplicacion.getText().toString().trim();
+            if (fechaAplicacion.isEmpty()) {
+                etFechaAplicacion.setError("Seleccioná una fecha");
+                return;
             }
-            Toast.makeText(getContext(), message + " (simulación)", Toast.LENGTH_LONG).show();
-            dismiss();
+
+            // Crear gestión y subir archivo
+            crearGestionYSubirArchivo("Medicamentos con autorización previa", fechaAplicacion);
         });
+    }
+
+    private void crearGestionYSubirArchivo(String nombreGestion, String fechaAplicacion) {
+        btnSolicitar.setEnabled(false);
+        btnSolicitar.setText("Enviando...");
+
+        GestionHelper.crearGestionYSubirArchivo(
+            requireContext(),
+            nombreGestion,
+            fechaAplicacion,
+            attachedFileUri,
+            new GestionHelper.GestionCallback() {
+                @Override
+                public void onSuccess(String gestionId) {
+                    btnSolicitar.setEnabled(true);
+                    btnSolicitar.setText("Solicitar");
+                    Toast.makeText(getContext(), "Solicitud enviada correctamente", Toast.LENGTH_LONG).show();
+                    dismiss();
+                }
+
+                @Override
+                public void onError(String message) {
+                    btnSolicitar.setEnabled(true);
+                    btnSolicitar.setText("Solicitar");
+                    Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+                }
+            }
+        );
     }
 
     private void showDatePickerDialog() {

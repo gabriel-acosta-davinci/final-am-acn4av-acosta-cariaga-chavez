@@ -5,83 +5,79 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import com.example.medicalshift.api.RetrofitClient;
+import com.example.medicalshift.models.FacturaResponse;
+import com.example.medicalshift.utils.TokenManager;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class PagarFacturaActivity extends AppCompatActivity {
 
-    private User currentUser;
+    private TokenManager tokenManager;
+    private RecyclerView recyclerFacturas;
+    private FacturaAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pagar_factura);
 
-        String userId = getIntent().getStringExtra("LOGGED_IN_USER_ID");
-        loadCurrentUser(userId);
+        tokenManager = new TokenManager(this);
 
-        RecyclerView recyclerFacturas = findViewById(R.id.recyclerFacturasPendientes);
+        recyclerFacturas = findViewById(R.id.recyclerFacturasPendientes);
         recyclerFacturas.setLayoutManager(new LinearLayoutManager(this));
 
-        List<Factura> listaFacturas = loadFacturasPendientes();
-        FacturaAdapter adapter = new FacturaAdapter(listaFacturas);
+        // Inicializar con lista vacía
+        adapter = new FacturaAdapter(new ArrayList<>());
         recyclerFacturas.setAdapter(adapter);
 
-        if (listaFacturas.isEmpty()) {
-            Toast.makeText(this, "No tenés facturas pendientes de pago.", Toast.LENGTH_LONG).show();
-        }
+        // Cargar facturas pendientes desde backend
+        loadFacturasPendientes();
     }
 
-    private void loadCurrentUser(String userId) {
-        if (userId == null) return;
-        try {
-            String json = loadJSONFromAsset("users.json");
-            JSONArray usersArray = new JSONArray(json);
-            for (int i = 0; i < usersArray.length(); i++) {
-                JSONObject userObject = usersArray.getJSONObject(i);
-                if (userObject.getString("Número de documento").equals(userId)) {
-                    currentUser = new User(userObject);
-                    break;
-                }
-            }
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
+    private void loadFacturasPendientes() {
+        String token = tokenManager.getToken();
+        if (token == null) {
+            Toast.makeText(this, "Sesión expirada. Por favor, inicia sesión nuevamente.", Toast.LENGTH_SHORT).show();
+            return;
         }
-    }
 
-    private List<Factura> loadFacturasPendientes() {
-        List<Factura> facturasPendientes = new ArrayList<>();
-        if (currentUser == null) return facturasPendientes;
+        String authHeader = "Bearer " + token;
 
-        try {
-            String json = loadJSONFromAsset("facturas.json");
-            JSONArray facturasArray = new JSONArray(json);
-            for (int i = 0; i < facturasArray.length(); i++) {
-                JSONObject facturaObject = facturasArray.getJSONObject(i);
-                if (facturaObject.getString("userId").equals(currentUser.getNumeroDocumento()) &&
-                    facturaObject.getString("estado").equals("Pendiente")) {
-                    facturasPendientes.add(new Factura(facturaObject));
-                }
-            }
-        } catch (IOException | JSONException e) { // CORREGIDO: Manejar la excepción
-            e.printStackTrace();
-        }
-        
-        return facturasPendientes;
-    }
+        RetrofitClient.getInstance().getApiService().getFacturas(authHeader, "Pendiente", 50)
+                .enqueue(new Callback<FacturaResponse>() {
+                    @Override
+                    public void onResponse(Call<FacturaResponse> call, Response<FacturaResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            FacturaResponse facturaResponse = response.body();
+                            List<Factura> facturas = facturaResponse.getFacturas();
+                            
+                            if (facturas != null && !facturas.isEmpty()) {
+                                adapter = new FacturaAdapter(facturas);
+                                recyclerFacturas.setAdapter(adapter);
+                            } else {
+                                Toast.makeText(PagarFacturaActivity.this, 
+                                    "No tenés facturas pendientes de pago.", 
+                                    Toast.LENGTH_LONG).show();
+                            }
+                        } else {
+                            Toast.makeText(PagarFacturaActivity.this, 
+                                "Error al cargar facturas", 
+                                Toast.LENGTH_SHORT).show();
+                        }
+                    }
 
-    private String loadJSONFromAsset(String fileName) throws IOException {
-        InputStream is = getAssets().open(fileName);
-        int size = is.available();
-        byte[] buffer = new byte[size];
-        is.read(buffer);
-        is.close();
-        return new String(buffer, StandardCharsets.UTF_8);
+                    @Override
+                    public void onFailure(Call<FacturaResponse> call, Throwable t) {
+                        Toast.makeText(PagarFacturaActivity.this, 
+                            "Error de conexión", 
+                            Toast.LENGTH_SHORT).show();
+                        t.printStackTrace();
+                    }
+                });
     }
 }

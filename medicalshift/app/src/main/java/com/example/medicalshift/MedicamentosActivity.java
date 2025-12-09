@@ -13,26 +13,34 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.json.JSONArray;
+import com.example.medicalshift.api.RetrofitClient;
+import com.example.medicalshift.models.UserResponse;
+import com.example.medicalshift.utils.TokenManager;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MedicamentosActivity extends AppCompatActivity {
 
-    private User currentUser;
+    private String userName = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_medicamentos);
 
-        loadCurrentUser();
+        // Cargar nombre del usuario desde backend
+        loadUserNameFromBackend();
 
         RecyclerView recyclerMedicamentosOpciones = findViewById(R.id.recyclerMedicamentosOpciones);
         recyclerMedicamentosOpciones.setLayoutManager(new LinearLayoutManager(this));
@@ -45,22 +53,18 @@ public class MedicamentosActivity extends AppCompatActivity {
         opciones.add("Medicamentos con autorización previa");
 
         MedicamentosOpcionAdapter adapter = new MedicamentosOpcionAdapter(opciones, opcion -> {
-            if (currentUser == null) {
-                Toast.makeText(this, "Cargando datos de usuario...", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
+            // Mostrar el bottom sheet correspondiente
             if (opcion.equals("Oncología")) {
-                OncologiaBottomSheetFragment bottomSheet = OncologiaBottomSheetFragment.newInstance(currentUser.getNombreCompleto());
+                OncologiaBottomSheetFragment bottomSheet = OncologiaBottomSheetFragment.newInstance(userName);
                 bottomSheet.show(getSupportFragmentManager(), bottomSheet.getTag());
             } else if (opcion.equals("Programa Diabetes")) {
-                DiabetesBottomSheetFragment bottomSheet = DiabetesBottomSheetFragment.newInstance(currentUser.getNombreCompleto());
+                DiabetesBottomSheetFragment bottomSheet = DiabetesBottomSheetFragment.newInstance(userName);
                 bottomSheet.show(getSupportFragmentManager(), bottomSheet.getTag());
             } else if (opcion.equals("Programa Patologías Crónicas")) {
-                CronicasBottomSheetFragment bottomSheet = CronicasBottomSheetFragment.newInstance(currentUser.getNombreCompleto());
+                CronicasBottomSheetFragment bottomSheet = CronicasBottomSheetFragment.newInstance(userName);
                 bottomSheet.show(getSupportFragmentManager(), bottomSheet.getTag());
             } else if (opcion.equals("Medicamentos con autorización previa")) {
-                AutorizacionBottomSheetFragment bottomSheet = AutorizacionBottomSheetFragment.newInstance(currentUser.getNombreCompleto());
+                AutorizacionBottomSheetFragment bottomSheet = AutorizacionBottomSheetFragment.newInstance(userName);
                 bottomSheet.show(getSupportFragmentManager(), bottomSheet.getTag());
             } else {
                 Toast.makeText(this, "Abriendo sección: " + opcion, Toast.LENGTH_SHORT).show();
@@ -70,32 +74,35 @@ public class MedicamentosActivity extends AppCompatActivity {
         recyclerMedicamentosOpciones.setAdapter(adapter);
     }
 
-    private void loadCurrentUser() {
-        String json = loadJSONFromAsset("users.json");
-        if (json != null) {
-            try {
-                JSONArray usersArray = new JSONArray(json);
-                if (usersArray.length() > 0) {
-                    currentUser = new User(usersArray.getJSONObject(0));
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
+    private void loadUserNameFromBackend() {
+        TokenManager tokenManager = new TokenManager(this);
+        String token = tokenManager.getToken();
+        
+        if (token == null) {
+            Toast.makeText(this, "Sesión expirada. Por favor, inicia sesión nuevamente.", Toast.LENGTH_SHORT).show();
+            return;
         }
-    }
 
-    private String loadJSONFromAsset(String fileName) {
-        try {
-            InputStream is = getAssets().open(fileName);
-            int size = is.available();
-            byte[] buffer = new byte[size];
-            is.read(buffer);
-            is.close();
-            return new String(buffer, StandardCharsets.UTF_8);
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            return null;
-        }
+        String authHeader = "Bearer " + token;
+
+        RetrofitClient.getInstance().getApiService().getCurrentUser(authHeader)
+                .enqueue(new Callback<UserResponse>() {
+                    @Override
+                    public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            UserResponse userResponse = response.body();
+                            userName = userResponse.getFullName() != null ? userResponse.getFullName() : "";
+                        } else {
+                            userName = "";
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<UserResponse> call, Throwable t) {
+                        userName = "";
+                        // No mostrar error, simplemente usar string vacío
+                    }
+                });
     }
 
     // --- CLASES INTERNAS Y ADAPTADOR ---

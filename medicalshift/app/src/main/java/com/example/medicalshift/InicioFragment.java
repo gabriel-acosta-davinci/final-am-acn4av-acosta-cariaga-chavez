@@ -64,9 +64,12 @@ public class InicioFragment extends Fragment {
         RecyclerView recyclerGestiones = view.findViewById(R.id.recyclerGestiones);
         recyclerGestiones.setLayoutManager(new LinearLayoutManager(getContext()));
         
-        List<Gestion> listaGestiones = loadPreviewGestionesForUser();
-        GestionAdapter gestionAdapter = new GestionAdapter(listaGestiones);
+        // Inicializar con lista vacía, se actualizará cuando lleguen los datos del backend
+        GestionAdapter gestionAdapter = new GestionAdapter(new ArrayList<>());
         recyclerGestiones.setAdapter(gestionAdapter);
+        
+        // Cargar las 3 gestiones más recientes desde el backend
+        loadPreviewGestionesForUser();
 
         loadProfesionales();
 
@@ -90,45 +93,146 @@ public class InicioFragment extends Fragment {
         btnVerCartilla.setOnClickListener(v -> { if (callback != null) callback.navegarA(1); });
     }
 
-    private void loadCurrentUser(String userId) {
-        if (userId == null) return;
-        try {
-            String json = loadJSONFromAsset("users.json");
-            JSONArray usersArray = new JSONArray(json);
-            for (int i = 0; i < usersArray.length(); i++) {
-                JSONObject userObject = usersArray.getJSONObject(i);
-                if (userObject.getString("Número de documento").equals(userId)) {
-                    currentUser = new User(userObject);
-                    break;
-                }
-            }
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
-        }
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Recargar las 3 gestiones más recientes cuando vuelve a la pantalla
+        // (por si se creó una nueva gestión)
+        loadPreviewGestionesForUser();
     }
 
-    private List<Gestion> loadPreviewGestionesForUser() {
-        List<Gestion> userGestiones = new ArrayList<>();
-        if (currentUser == null) return userGestiones;
-        try {
-            String json = loadJSONFromAsset("gestiones.json"); 
-            JSONArray gestionesArray = new JSONArray(json);
-            for (int i = 0; i < gestionesArray.length(); i++) {
-                JSONObject g = gestionesArray.getJSONObject(i);
-                if (g.getString("userId").equals(currentUser.getNumeroDocumento())) {
-                    userGestiones.add(new Gestion(g.getString("nombre"), g.getString("fecha"), g.getString("estado")));
-                }
+    private void loadCurrentUser(String userId) {
+        // Obtener userId del TokenManager si no viene en argumentos
+        com.example.medicalshift.utils.TokenManager tokenManager = new com.example.medicalshift.utils.TokenManager(requireContext());
+        String finalUserId = userId != null ? userId : tokenManager.getUserId();
+        
+        if (finalUserId == null) {
+            return;
+        }
+        
+        // Cargar usuario desde backend
+        String token = tokenManager.getToken();
+        if (token == null) {
+            return;
+        }
+
+        String authHeader = "Bearer " + token;
+        com.example.medicalshift.api.RetrofitClient.getInstance().getApiService()
+                .getCurrentUser(authHeader)
+                .enqueue(new retrofit2.Callback<com.example.medicalshift.models.UserResponse>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<com.example.medicalshift.models.UserResponse> call,
+                                         retrofit2.Response<com.example.medicalshift.models.UserResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            // Convertir UserResponse a User para compatibilidad
+                            com.example.medicalshift.models.UserResponse userResponse = response.body();
+                            try {
+                                JSONObject userJson = new JSONObject();
+                                userJson.put("Nombre Completo", userResponse.getFullName());
+                                userJson.put("Número de documento", userResponse.getDocumentNumber());
+                                userJson.put("Número de teléfono", userResponse.getPhoneNumber());
+                                userJson.put("Email", userResponse.getEmail());
+                                userJson.put("Plan", userResponse.getPlan());
+                                userJson.put("Número de asociado", userResponse.getAssociateNumber());
+                                userJson.put("CBU", userResponse.getCbu());
+                                userJson.put("Fecha de nacimiento", "");
+                                userJson.put("Estado Civil", "");
+                                userJson.put("contraseña", "");
+                                userJson.put("token", "");
+                                
+                                // Domicilio
+                                JSONObject domicilio = new JSONObject();
+                                if (userResponse.getAddress() != null) {
+                                    domicilio.put("Calle", userResponse.getAddress().getStreet());
+                                    domicilio.put("Número", userResponse.getAddress().getNumber());
+                                    domicilio.put("Piso", userResponse.getAddress().getFloor() != null ? userResponse.getAddress().getFloor() : "");
+                                    domicilio.put("Dpto", userResponse.getAddress().getApartment() != null ? userResponse.getAddress().getApartment() : "");
+                                    domicilio.put("Localidad", userResponse.getAddress().getCity());
+                                    domicilio.put("Provincia", userResponse.getAddress().getProvince());
+                                } else {
+                                    domicilio.put("Calle", "");
+                                    domicilio.put("Número", 0);
+                                    domicilio.put("Localidad", "");
+                                    domicilio.put("Provincia", "");
+                                }
+                                userJson.put("Domicilio de Residencia", domicilio);
+                                
+                                currentUser = new User(userJson);
+                                updateUI(getView());
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<com.example.medicalshift.models.UserResponse> call, Throwable t) {
+                        // Error silencioso
+                    }
+                });
+    }
+
+    private void loadPreviewGestionesForUser() {
+        com.example.medicalshift.utils.TokenManager tokenManager = new com.example.medicalshift.utils.TokenManager(requireContext());
+        String userId = tokenManager.getUserId();
+        String token = tokenManager.getToken();
+        
+        if (userId == null || token == null) {
+            // Si no hay token o userId, mostrar lista vacía
+            RecyclerView recyclerGestiones = getView() != null ? getView().findViewById(R.id.recyclerGestiones) : null;
+            if (recyclerGestiones != null) {
+                GestionAdapter gestionAdapter = new GestionAdapter(new ArrayList<>());
+                recyclerGestiones.setAdapter(gestionAdapter);
             }
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-            Collections.sort(userGestiones, (g1, g2) -> {
-                try {
-                    Date d1 = sdf.parse(g1.getFecha());
-                    Date d2 = sdf.parse(g2.getFecha());
-                    return d2.compareTo(d1);
-                } catch (ParseException e) { return 0; }
-            });
-        } catch (IOException | JSONException e) { e.printStackTrace(); }
-        return userGestiones.subList(0, Math.min(3, userGestiones.size()));
+            return;
+        }
+
+        String authHeader = "Bearer " + token;
+        
+        // Cargar las 3 gestiones más recientes
+        com.example.medicalshift.api.RetrofitClient.getInstance().getApiService()
+                .getGestiones(authHeader, userId, null, 3)
+                .enqueue(new retrofit2.Callback<com.example.medicalshift.models.GestionResponse>() {
+                    @Override
+                    public void onResponse(retrofit2.Call<com.example.medicalshift.models.GestionResponse> call,
+                                         retrofit2.Response<com.example.medicalshift.models.GestionResponse> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            com.example.medicalshift.models.GestionResponse gestionResponse = response.body();
+                            List<Gestion> gestiones = gestionResponse.getGestiones();
+                            
+                            // Actualizar el RecyclerView con las gestiones obtenidas
+                            RecyclerView recyclerGestiones = getView() != null ? getView().findViewById(R.id.recyclerGestiones) : null;
+                            if (recyclerGestiones != null) {
+                                if (gestiones != null && !gestiones.isEmpty()) {
+                                    GestionAdapter gestionAdapter = new GestionAdapter(gestiones);
+                                    recyclerGestiones.setAdapter(gestionAdapter);
+                                } else {
+                                    // Si no hay gestiones, mostrar lista vacía
+                                    GestionAdapter gestionAdapter = new GestionAdapter(new ArrayList<>());
+                                    recyclerGestiones.setAdapter(gestionAdapter);
+                                }
+                            }
+                        } else {
+                            // Si hay error en la respuesta, mostrar lista vacía
+                            RecyclerView recyclerGestiones = getView() != null ? getView().findViewById(R.id.recyclerGestiones) : null;
+                            if (recyclerGestiones != null) {
+                                GestionAdapter gestionAdapter = new GestionAdapter(new ArrayList<>());
+                                recyclerGestiones.setAdapter(gestionAdapter);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(retrofit2.Call<com.example.medicalshift.models.GestionResponse> call, Throwable t) {
+                        // En caso de error de conexión, mostrar lista vacía
+                        RecyclerView recyclerGestiones = getView() != null ? getView().findViewById(R.id.recyclerGestiones) : null;
+                        if (recyclerGestiones != null) {
+                            GestionAdapter gestionAdapter = new GestionAdapter(new ArrayList<>());
+                            recyclerGestiones.setAdapter(gestionAdapter);
+                        }
+                        android.util.Log.e("InicioFragment", "Error cargando gestiones", t);
+                    }
+                });
     }
 
     private void updateUI(View view) {
